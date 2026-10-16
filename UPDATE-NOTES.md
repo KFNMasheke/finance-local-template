@@ -8,7 +8,7 @@
 4. Run Start-Finance.bat. It prepares a private Python environment and installs PDF support once. The first setup requires internet. Subsequent starts use installed dependencies.
 5. Refresh the browser tab. Check Monthly plan and Debt freedom.
 
-Your existing database takes priority over bundled starting data. Do not restore an older starting backup over your latest edits. Browser-only users must keep the same folder/browser profile, or export and restore a backup when changing modes.
+Your existing database takes priority over bundled starting data. Do not restore an older starting backup over your latest edits. Browser-only users should export a backup before this update, then restore that exported backup if the updated app opens blank. Browser-only editions can have different storage identities. Changing to the Python app also requires export and restore.
 
 ## What changes on first load
 
