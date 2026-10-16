@@ -1,0 +1,15 @@
+data/
+__pycache__/
+*.pyc
+*.sqlite*
+*.db
+*.pdf
+*.csv
+*.zip
+*.json
+.env*
+private*
+blank*
+*backup*
+statement*
+FINANCIAL-REVIEW.md
