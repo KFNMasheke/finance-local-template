@@ -26,8 +26,33 @@ class LocalApiTests(unittest.TestCase):
     def test_bad_payload(self):
         self.assertEqual(self.call('POST','/api/state','garbage')[0],400)
         self.assertEqual(self.call('POST','/api/state','{}')[0],400)
+    def test_pdf_empty_password_security_and_real_password(self):
+        import io
+        from pypdf import PdfWriter
+        from unittest.mock import patch
+        for password,expected in [('',200),('required-password',400)]:
+            writer=PdfWriter();page=writer.add_blank_page(width=100,height=100)
+            from pypdf.generic import NameObject,DecodedStreamObject
+            stream=DecodedStreamObject();stream.set_data(b'BT ET');page[NameObject('/Contents')]=stream
+            writer.encrypt(password)
+            output=io.BytesIO();writer.write(output)
+            with patch('server.statement',return_value={'summaryVerified':True}):
+                status,body=self.call('POST','/api/pdf',output.getvalue())
+            self.assertEqual(status,expected,body)
+            if expected==400:self.assertIn('password',json.loads(body)['error'])
     def test_split_pdf_text_layout(self):
         from analyse import parse
         text='STATEMENT OPENING BALANCE   -100.00\n  01 Oct 26   Grocery store\n  CHEQUE CARD PURCHASE      - 12.00       -112.00\n  02 Oct 26   Income    50.00     -62.00\n'
         rows,op=parse(text);self.assertEqual(len(rows),2);self.assertTrue(all(r['verified'] for r in rows));self.assertEqual(op,-100)
 if __name__=='__main__':unittest.main()
+
+class StatementValidationTests(unittest.TestCase):
+    def text(self):
+        return 'STANDARD BANK\nFrom: 01 Oct 26\nTo: 02 Oct 26\nAccount number: 10 12 204 273 3         051001\nSTATEMENT OPENING BALANCE -100.00\n01 Oct 26 Store -12.00 -112.00\n02 Oct 26 Salary 50.00 -62.00\nStatement Summary\nPayments -R12.00\nDeposits R50.00'
+    def test_summary_and_account(self):
+        from analyse import statement
+        data=statement(self.text());self.assertEqual(data['accountLast4'],'2733');self.assertTrue(data['summaryVerified']);self.assertEqual(data['closing'],-62)
+    def test_partial_or_bad_statement_is_rejected(self):
+        from analyse import statement
+        for text in [self.text().replace('Deposits R50.00','Deposits R51.00'),self.text().replace('-112.00','-111.00'),self.text().replace('STANDARD BANK','OTHER BANK'),self.text().split('Statement Summary')[0]]:
+            with self.assertRaises(ValueError):statement(text)

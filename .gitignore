@@ -13,3 +13,5 @@ blank*
 *backup*
 statement*
 FINANCIAL-REVIEW.md
+
+.venv/

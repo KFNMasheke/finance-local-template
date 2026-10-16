@@ -2,6 +2,10 @@
 
 A free, local-first personal finance app for Windows PCs, with no subscription or bank login. Enter your own income, budget and debt details. ZAR and South African 2027 income-tax scenarios are built in.
 
+## Latest update
+
+See [UPDATE-NOTES.md](UPDATE-NOTES.md) for upgrade instructions. Income and debt instalments drive the dashboard. Living costs are optional. Trends and What-if cash flow are separate pages. Save confirmations follow successful persistence. Optional AI uses a downloaded local Ollama model.
+
 ## Start on Windows
 
 1. Extract the complete ZIP into a permanent folder.
@@ -10,7 +14,7 @@ A free, local-first personal finance app for Windows PCs, with no subscription o
 4. Add income under Monthly plan; add budgets and lender details; configure tax, savings and lifestyle targets.
 5. Export a complete JSON backup regularly. Close the app with Ctrl+C in its console.
 
-macOS/Linux: `python3 server.py` from the extracted folder. The server binds only to loopback. It must not be deployed as a public web service.
+macOS/Linux: `python3 launch.py` from the extracted folder. The server binds only to loopback. It must not be deployed as a public web service.
 
 ### No Python available?
 
@@ -24,7 +28,7 @@ The responsive dashboard uses a fixed sidebar on desktop, a two-column card layo
 
 - Monthly dashboard and 12-month fixed-assumption cash outlook.
 - Editable salary, contractor and business-profit forecasts; transfers and borrowing kept separate from earned income.
-- Categorised transactions, CSV imports/exports and optional Standard Bank PDF imports with duplicate checks.
+- Categorised transactions, CSV imports/exports and Standard Bank PDF imports with duplicate checks.
 - Recurring merchant candidates and budget-vs-actual comparisons.
 - Debt register, avalanche/snowball simulator, missing-interest-rate checks and affordable-extra cap.
 - South African 2027 tax bands, PAYE reserve, partial-year projection and progressive gross-income target calculation.
@@ -33,11 +37,11 @@ The responsive dashboard uses a fixed sidebar on desktop, a two-column card layo
 
 ## Import a statement
 
-CSV columns: `date,description,amount,balance,category`. `balance` and `category` columns are optional. Use ISO dates (`2026-10-01`), positive deposits and negative outflows. Quote descriptions containing commas. All amounts are ZAR. Download a sample from Monthly audit.
+CSV columns: `date,description,amount,balance,category`. `balance` and `category` columns are optional. Use ISO dates (`2026-10-01`), positive deposits and negative outflows. Quote descriptions containing commas. All amounts are ZAR. CSV is an optional advanced format. Standard Bank PDFs are the primary import path.
 
-For text-based Standard Bank PDF statements, run **Install-PDF-Support.bat** once. This downloads the optional `pypdf` package from PyPI; PDF processing thereafter stays local. Other layouts, scanned PDFs, password-protected files and missing opening balance formats may require a bank CSV export. Encrypted PDFs must be unlocked locally first. Files larger than 20 MB are rejected.
+For text-based Standard Bank PDF statements, run **Start-Finance.bat**. First run installs `pypdf` into an isolated environment from PyPI; PDF processing thereafter stays local. Other layouts, scanned PDFs, password-protected files and missing opening balance formats may require a bank CSV export. Encrypted PDFs must be unlocked locally first. Files larger than 20 MB are rejected.
 
-Imports are previewed before saving. PDF imports can refresh the full statement period: overlapping imported rows are replaced, manual entries and matched categories are retained, and old overlapping audits are marked superseded. This avoids double-counting changed references, backdated reversals and settled card authorisations. Exact repeat refreshes are idempotent. Export a backup first. Append mode instead skips exact row matches per account. Use a consistent account nickname. Repeated identical CSV transactions without running balances can be ambiguous across overlapping statements: reconcile each import. Prefer complete monthly statements with balances. Loan proceeds, transfers and returned debit orders are not salary. A returned debit does not prove the debt was paid.
+Imports are previewed before saving. PDF imports refresh the full statement period: overlapping imported rows are replaced, manual entries and matched categories are retained, and old overlapping audits are marked superseded. This avoids double-counting changed references, backdated reversals and settled card authorisations. Exact repeat refreshes are idempotent. Export a backup first. CSV append skips exact row matches per account. Use a consistent account nickname. Repeated identical CSV transactions without running balances can be ambiguous across overlapping statements: reconcile each import. Prefer complete monthly statements with balances. Loan proceeds, transfers and returned debit orders are not salary. A returned debit does not prove the debt was paid.
 
 PDF extraction is layout-dependent. The bundled Standard Bank parser checks each running balance. Reconcile imported deposit/payment totals against the original statement before closing the month. The app does not connect to a bank or fetch statements in the background.
 
@@ -74,10 +78,11 @@ Validation:
 ```sh
 node test_core.js
 node test_views.js
+node test_save.js
 python -m unittest test_server.py
 ```
 
-Core tests cover tax boundaries, combined-income reserves, gross-up, import validation, duplicate identities, audit arithmetic and debt amortisation. View tests render all seven screens against a DOM stub; they are not browser visual tests. API tests cover persistence, rejected cross-origin writes, file isolation and split-line statement parsing. This release has not been visually tested in a Windows browser.
+Core tests cover tax boundaries, combined-income reserves, gross-up, import validation, duplicate identities, audit arithmetic and debt amortisation. View tests render all nine screens against a DOM stub; they are not browser visual tests. API tests cover persistence, rejected cross-origin writes, file isolation and split-line statement parsing. This release has not been visually tested in a Windows browser.
 
 ### GitHub template publishing
 

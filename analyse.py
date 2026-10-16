@@ -41,3 +41,24 @@ if __name__=='__main__':
     rows,opening=parse(open(a.text_file,encoding='utf8').read())
     json.dump({'transactions':rows,'opening':opening},open(a.output_file,'w',encoding='utf8'),indent=2)
     print(f'{len(rows)} rows extracted')
+
+
+def statement(text):
+    """Validate a Standard Bank PDF against running balances and printed summary."""
+    if not re.search(r'STANDARD\s+BANK|standardbank\.co\.za',text,re.I):
+        raise ValueError('This importer supports Standard Bank statements. Bank heading not found.')
+    rows,opening=parse(text)
+    if opening is None or not rows:raise ValueError('No readable statement ledger found. Upload the original text-based PDF, not a scan.')
+    if any(not r['verified'] for r in rows):raise ValueError('Amounts do not reconcile with every running balance. Nothing imported; check the PDF format.')
+    start=re.search(r'From:\s*(\d{2} [A-Za-z]{3} \d{2})',text);end=re.search(r'To:\s*(\d{2} [A-Za-z]{3} \d{2})',text)
+    if not start or not end:raise ValueError('Statement From / To dates not found. Nothing imported.')
+    first=datetime.strptime(start[1],'%d %b %y').strftime('%Y-%m-%d');last=datetime.strptime(end[1],'%d %b %y').strftime('%Y-%m-%d')
+    if first>last or any(not first<=r['date']<=last for r in rows):raise ValueError('Transactions fall outside the printed statement dates.')
+    summary=text.rsplit('Statement Summary',1)[-1] if 'Statement Summary' in text else ''
+    payments=re.search(r'Payments\s+(-?\s*R?\s*[\d,]+\.\d{2})',summary)
+    deposits=re.search(r'Deposits\s+(-?\s*R?\s*[\d,]+\.\d{2})',summary)
+    if not payments or not deposits:raise ValueError('Printed statement summary not found. Upload the complete PDF with all pages.')
+    paid=round(sum(-r['amount'] for r in rows if r['amount']<0),2);received=round(sum(r['amount'] for r in rows if r['amount']>0),2)
+    if abs(abs(number(payments[1].replace('R','')))-paid)>.011 or abs(number(deposits[1].replace('R',''))-received)>.011:raise ValueError('Printed payments / deposits do not match extracted rows. Nothing imported.')
+    account=re.search(r'Account number:[ \t]*([0-9]+(?: [0-9]+)*)',text,re.I);digits=re.sub(r'\D','',account[1]) if account else ''
+    return {'transactions':rows,'opening':opening,'closing':rows[-1]['balance'],'warnings':0,'from':first,'to':last,'accountLast4':digits[-4:],'summaryVerified':True,'payments':paid,'deposits':received}

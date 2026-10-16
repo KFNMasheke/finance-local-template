@@ -2,9 +2,9 @@
 cd /d "%~dp0"
 where py >nul 2>nul
 if %errorlevel%==0 (
-  py -3 server.py
+  py -3 launch.py
 ) else (
-  python server.py
+  python launch.py
 )
 if errorlevel 1 (
  echo Install Python 3.10 or newer from python.org and enable Add Python to PATH.
