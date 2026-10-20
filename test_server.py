@@ -26,6 +26,17 @@ class LocalApiTests(unittest.TestCase):
     def test_bad_payload(self):
         self.assertEqual(self.call('POST','/api/state','garbage')[0],400)
         self.assertEqual(self.call('POST','/api/state','{}')[0],400)
+    def test_rejected_save_preserves_previous_state_and_negative_length_is_bounded(self):
+        good={'version':1,'transactions':[],'income':[],'budgets':[],'debts':[],'audits':[],'settings':{}}
+        self.assertEqual(self.call('POST','/api/state',json.dumps(good))[0],200)
+        bad={**good,'debts':[{'balance':float('nan'),'minimum':10,'apr':None}]}
+        self.assertEqual(self.call('POST','/api/state',json.dumps(bad))[0],400)
+        self.assertEqual(json.loads(self.call('GET','/api/state')[1]),good)
+        connection=http.client.HTTPConnection('127.0.0.1',server.PORT,timeout=2)
+        connection.request('POST','/api/state',body=b'',headers={'Content-Length':'-1','Origin':f'http://127.0.0.1:{server.PORT}','X-Finance-Local':'1'})
+        response=connection.getresponse()
+        self.assertEqual(response.status,400)
+        response.read();connection.close()
     def test_pdf_empty_password_security_and_real_password(self):
         import io
         from pypdf import PdfWriter
