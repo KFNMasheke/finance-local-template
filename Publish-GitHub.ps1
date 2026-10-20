@@ -10,7 +10,7 @@ $seed = $match.Groups[1].Value | ConvertFrom-Json
 foreach ($field in @('transactions','income','budgets','debts','audits','evidence','imports')) {
     if (@($seed.$field).Count -gt 0) { throw "Personal data found in $field. Use the clean template ZIP, not the private app." }
 }
-$allowed = @('index.html','app.js','core.js','style.css','server.py','analyse.py','Start-Finance.bat','Install-PDF-Support.bat','README.md','LICENSE','requirements-pdf.txt','test_core.js','test_views.js','test_server.py','Publish-GitHub.ps1','.gitignore','.github')
+$allowed = @('index.html','app.js','core.js','style.css','server.py','state_validation.py','test_state_validation.py','analyse.py','Start-Finance.bat','Install-PDF-Support.bat','README.md','LICENSE','requirements-pdf.txt','test_core.js','test_views.js','test_server.py','Publish-GitHub.ps1','.gitignore','.github')
 Get-ChildItem -Force | Where-Object { $_.Name -notin ($allowed + @('.git')) } | ForEach-Object { throw "Unexpected file $($_.Name). Use a fresh clean template folder." }
 $owner = gh api user --jq '.login'
 if ($LASTEXITCODE -ne 0) { throw 'Authenticate first: gh auth login' }

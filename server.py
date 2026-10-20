@@ -4,6 +4,7 @@ from http.server import ThreadingHTTPServer
 from http.server import HTTPServer,BaseHTTPRequestHandler
 from analyse import parse,statement
 from datetime import datetime
+from state_validation import validate_state
 ROOT=pathlib.Path(__file__).resolve().parent
 DB=ROOT/'data'/'finance.sqlite3'
 PORT=8765
@@ -15,8 +16,7 @@ def connection():
     return db
 
 def validate(s):
-    if not isinstance(s,dict) or s.get('version')!=1 or not all(isinstance(s.get(k),list) for k in ['transactions','income','budgets','debts','audits']) or not isinstance(s.get('settings'),dict):raise ValueError('Invalid finance data')
-    return s
+    return validate_state(s)
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self,*args,**kwargs):return None
 
@@ -38,6 +38,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.allowed() or self.headers.get('Origin')!=f'http://127.0.0.1:{PORT}' or self.headers.get('X-Finance-Local')!='1':return self.reply(403,{'error':'Only the local app can write data'})
         try:
             size=int(self.headers.get('Content-Length','0'))
+            if size<=0:raise ValueError('A positive Content-Length is required')
             if size>20*1024*1024:raise ValueError('File is larger than 20 MB')
             raw=self.rfile.read(size)
             if self.path=='/api/state':
