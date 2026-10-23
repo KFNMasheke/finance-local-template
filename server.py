@@ -1,5 +1,5 @@
 """Loopback-only local app. No remote services. Python 3.10+."""
-import json,sqlite3,pathlib,webbrowser,threading,io,re,sys,urllib.request
+import json,sqlite3,pathlib,webbrowser,threading,io,re,sys,urllib.request,contextlib
 from http.server import ThreadingHTTPServer
 from http.server import HTTPServer,BaseHTTPRequestHandler
 from analyse import parse,statement
@@ -9,11 +9,21 @@ ROOT=pathlib.Path(__file__).resolve().parent
 DB=ROOT/'data'/'finance.sqlite3'
 PORT=8765
 
+@contextlib.contextmanager
 def connection():
-    DB.parent.mkdir(exist_ok=True)
-    db=sqlite3.connect(DB)
-    db.execute('CREATE TABLE IF NOT EXISTS states (id INTEGER PRIMARY KEY, saved TEXT DEFAULT CURRENT_TIMESTAMP, body TEXT NOT NULL)')
-    return db
+    """Yield a per-request SQLite transaction and always close its handle.
+
+    sqlite3.Connection.__exit__ only commits or rolls back; it does not close.
+    """
+    DB.parent.mkdir(parents=True, exist_ok=True)
+    db = sqlite3.connect(DB, timeout=15)
+    try:
+        db.execute('PRAGMA busy_timeout=15000')
+        db.execute('CREATE TABLE IF NOT EXISTS states (id INTEGER PRIMARY KEY, saved TEXT DEFAULT CURRENT_TIMESTAMP, body TEXT NOT NULL)')
+        with db:
+            yield db
+    finally:
+        db.close()
 
 def validate(s):
     return validate_state(s)
